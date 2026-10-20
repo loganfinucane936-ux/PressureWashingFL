@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driveway Pressure Washing</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f6fa;
+      color: #183044;
+    }
+
+    header {
+      background: #073b67;
+      color: white;
+      text-align: center;
+      padding: 35px 15px;
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+    }
+
+    header p {
+      margin: 0;
+    }
+
+    main {
+      max-width: 650px;
+      margin: 25px auto;
+      padding: 0 15px;
+    }
+
+    section {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px #00000012;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #073b67;
+    }
+
+    .price {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 7px;
+      border: 1px solid #bdcbd5;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 20px;
+      background: #0879c9;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #8296a5;
+      cursor: not-allowed;
+    }
+
+    #priceDisplay {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 18px;
+      color: #0879c9;
+    }
+
+    #message {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #5b6c78;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Driveway Pressure Washing</h1>
+    <p>Make your driveway look fresh and clean!</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Our Prices</h2>
+
+      <div class="price">
+        <span>1-car driveway</span>
+        <strong>$40</strong>
+      </div>
+
+      <div class="price">
+        <span>2-car driveway</span>
+        <strong>$60</strong>
+      </div>
+
+      <div class="price">
+        <span>3-car driveway</span>
+        <strong>$80</strong>
+      </div>
+
+      <div class="price">
+        <span>Walkway add-on</span>
+        <strong>+$15</strong>
+      </div>
+    </section>
+
+    <section>
+      <h2>Request a Booking</h2>
+
+      <form id="bookingForm">
+        <label for="name">Your Name</label>
+        <input id="name" name="name" required>
+
+        <label for="address">Service Address</label>
+        <input id="address" name="address" required>
+
+        <label for="phone">Phone Number</label>
+        <input id="phone" name="phone" type="tel" required>
+
+        <label for="service">Choose a Service</label>
+        <select id="service" name="service" required>
+          <option value="">Select a service</option>
+          <option value="Driveway">Driveway Pressure Washing</option>
+          <option value="Driveway + Walkway">Driveway + Walkway</option>
+        </select>
+
+        <label for="size">Driveway Size</label>
+        <select id="size" name="size" required disabled>
+          <option value="">Choose a service first</option>
+          <option value="1-car">1-car driveway</option>
+          <option value="2-car">2-car driveway</option>
+          <option value="3-car">3-car driveway</option>
+        </select>
+
+        <div id="priceDisplay">Estimated price: —</div>
+
+        <label for="date">Choose a Sunday</label>
+        <select id="date" name="date" required>
+          <option value="">Loading dates...</option>
+        </select>
+
+        <label for="time">Choose a Time</label>
+        <select id="time" name="time" required>
+          <option value="">Choose a date first</option>
+        </select>
+
+        <button id="submitButton" type="submit">
+          Request Booking
+        </button>
+
+        <p id="message" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    Reliable service. Cleaner driveways.
+  </footer>
+
+  <script>
+    // ==========================================
+    // AIRTABLE SETTINGS — EXACT PLACE TO PASTE
+    // ==========================================
+
+    // IMPORTANT: Do not publish a real API token here.
+    // Anyone can view the source code of a public website.
+
+    const AIRTABLE_TOKEN = "pat3Eo0vLiehCGdTP";
+    const AIRTABLE_BASE_ID = "apphbFtUjRt91uBsP";
+    const AIRTABLE_TABLE_NAME = "Bookings";
+
+    // Your Airtable connection is not implemented by these
+    // settings alone. A secure backend is needed to use them.
+
+    // ==========================================
+    // PRICES
+    // ==========================================
+
+    const prices = {
+      "1-car": 40,
+      "2-car": 60,
+      "3-car": 80
+    };
+
+    const service = document.getElementById("service");
+    const size = document.getElementById("size");
+    const date = document.getElementById("date");
+    const time = document.getElementById("time");
+    const priceDisplay = document.getElementById("priceDisplay");
+    const message = document.getElementById("message");
+    const submitButton = document.getElementById("submitButton");
+    const form = document.getElementById("bookingForm");
+
+    function getPrice() {
+      if (!service.value || !size.value) {
+        return null;
+      }
+
+      return prices[size.value] +
+        (service.value === "Driveway + Walkway" ? 15 : 0);
+    }
+
+    function updatePrice() {
+      const price = getPrice();
+
+      priceDisplay.textContent = price === null
+        ? "Estimated price: —"
+        : `Estimated price: $${price}`;
+    }
+
+    service.addEventListener("change", () => {
+      size.disabled = !service.value;
+      size.value = "";
+      updatePrice();
+    });
+
+    size.addEventListener("change", updatePrice);
+
+    // ==========================================
+    // AVAILABLE SUNDAYS
+    // ==========================================
+
+    function loadDates() {
+      date.innerHTML = '<option value="">Choose a Sunday</option>';
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (let i = 0; i < 90; i++) {
+        const day = new Date(today);
+        day.setDate(today.getDate() + i);
+
+        if (day.getDay() === 0) {
+          const value =
+            `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = day.toLocaleDateString(
+            "en-US",
+            {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric"
+            }
+          );
+
+          date.appendChild(option);
+        }
+      }
+    }
+
+    // ==========================================
+    // AVAILABLE TIMES
+    // ==========================================
+
+    function loadTimes() {
+      time.innerHTML = '<option value="">Choose a time</option>';
+
+      if (!date.value) {
+        return;
+      }
+
+      ["10:00 AM", "1:00 PM", "4:00 PM"].forEach(slot => {
+        const option = document.createElement("option");
+        option.value = slot;
+        option.textContent = slot;
+        time.appendChild(option);
+      });
+    }
+
+    date.addEventListener("change", loadTimes);
+
+    // ==========================================
+    // BOOKING SUBMISSION
+    // ==========================================
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      message.textContent = "";
+      submitButton.disabled = true;
+
+      try {
+        /*
+          IMPORTANT:
+          This sample does NOT submit to Airtable.
+          It is intentionally disabled until a secure backend
+          is connected. Do not pretend a booking was saved.
+        */
+
+        if (
+          AIRTABLE_TOKEN === "PASTE_YOUR_AIRTABLE_TOKEN_HERE" ||
+          AIRTABLE_BASE_ID === "PASTE_YOUR_BASE_ID_HERE"
+        ) {
+          throw new Error(
+            "Booking system setup is incomplete. Please contact us directly."
+          );
+        }
+
+        throw new Error(
+          "A secure booking connection has not been configured yet."
+        );
+
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    loadDates();
+  </script>
+</body>
+</html>
