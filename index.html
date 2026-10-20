@@ -7,9 +7,7 @@
   <title>Driveway Pressure Washing</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -30,10 +28,6 @@
       font-size: 32px;
     }
 
-    header p {
-      margin: 0;
-    }
-
     main {
       max-width: 650px;
       margin: 25px auto;
@@ -48,10 +42,7 @@
       box-shadow: 0 3px 12px #00000012;
     }
 
-    h2 {
-      margin-top: 0;
-      color: #073b67;
-    }
+    h2 { margin-top: 0; color: #073b67; }
 
     .price {
       display: flex;
@@ -99,6 +90,7 @@
     #message {
       margin-top: 15px;
       font-weight: bold;
+      overflow-wrap: anywhere;
     }
 
     footer {
@@ -118,26 +110,10 @@
   <main>
     <section>
       <h2>Our Prices</h2>
-
-      <div class="price">
-        <span>1-car driveway</span>
-        <strong>$40</strong>
-      </div>
-
-      <div class="price">
-        <span>2-car driveway</span>
-        <strong>$60</strong>
-      </div>
-
-      <div class="price">
-        <span>3-car driveway</span>
-        <strong>$80</strong>
-      </div>
-
-      <div class="price">
-        <span>Walkway add-on</span>
-        <strong>+$15</strong>
-      </div>
+      <div class="price"><span>1-car driveway</span><strong>$40</strong></div>
+      <div class="price"><span>2-car driveway</span><strong>$60</strong></div>
+      <div class="price"><span>3-car driveway</span><strong>$80</strong></div>
+      <div class="price"><span>Walkway add-on</span><strong>+$15</strong></div>
     </section>
 
     <section>
@@ -145,13 +121,13 @@
 
       <form id="bookingForm">
         <label for="name">Your Name</label>
-        <input id="name" name="name" autocomplete="name" required>
+        <input id="name" name="name" required>
 
         <label for="address">Service Address</label>
-        <input id="address" name="address" autocomplete="street-address" required>
+        <input id="address" name="address" required>
 
         <label for="phone">Phone Number</label>
-        <input id="phone" name="phone" type="tel" autocomplete="tel" required>
+        <input id="phone" name="phone" type="tel" required>
 
         <label for="service">Choose a Service</label>
         <select id="service" name="service" required>
@@ -169,7 +145,6 @@
         </select>
 
         <div id="priceDisplay">Estimated price: —</div>
-        <input type="hidden" id="price" name="price" value="">
 
         <label for="date">Choose a Sunday</label>
         <select id="date" name="date" required>
@@ -190,21 +165,16 @@
     </section>
   </main>
 
-  <footer>
-    Reliable service. Cleaner driveways.
-  </footer>
+  <footer>Reliable service. Cleaner driveways.</footer>
 
   <script>
     // ==========================================
-    // AIRTABLE SETTINGS (NOT USED IN THIS VERSION)
+    // AIRTABLE SETTINGS
     // ==========================================
 
     const AIRTABLE_TOKEN = "pat3Eo0vLiehCGdTP";
     const AIRTABLE_BASE_ID = "apphbFtUjRt91uBsP";
     const AIRTABLE_TABLE_NAME = "Bookings";
-
-    // WARNING: Do not put a real Airtable API token in
-    // public website code. These settings are not connected.
 
     // ==========================================
     // FORMSPREE SETTINGS
@@ -214,7 +184,7 @@
       "https://formspree.io/f/xnpjkzaw";
 
     // ==========================================
-    // PRICES
+    // PRICES AND ELEMENTS
     // ==========================================
 
     const prices = {
@@ -223,20 +193,17 @@
       "3-car": 80
     };
 
+    const form = document.getElementById("bookingForm");
     const service = document.getElementById("service");
     const size = document.getElementById("size");
     const date = document.getElementById("date");
     const time = document.getElementById("time");
     const priceDisplay = document.getElementById("priceDisplay");
-    const priceInput = document.getElementById("price");
     const message = document.getElementById("message");
     const submitButton = document.getElementById("submitButton");
-    const form = document.getElementById("bookingForm");
 
     function getPrice() {
-      if (!service.value || !size.value) {
-        return null;
-      }
+      if (!service.value || !size.value) return null;
 
       return prices[size.value] +
         (service.value === "Driveway + Walkway" ? 15 : 0);
@@ -248,24 +215,18 @@
       priceDisplay.textContent = price === null
         ? "Estimated price: —"
         : `Estimated price: $${price}`;
-
-      priceInput.value = price === null ? "" : `$${price}`;
     }
 
     service.addEventListener("change", () => {
       size.disabled = !service.value;
       size.value = "";
       updatePrice();
-      message.textContent = "";
     });
 
-    size.addEventListener("change", () => {
-      updatePrice();
-      message.textContent = "";
-    });
+    size.addEventListener("change", updatePrice);
 
     // ==========================================
-    // LOAD SUNDAYS FOR THE NEXT 90 DAYS
+    // SUNDAY DATE OPTIONS
     // ==========================================
 
     function loadDates() {
@@ -285,32 +246,23 @@
 
           const option = document.createElement("option");
           option.value = value;
-          option.textContent = day.toLocaleDateString(
-            "en-US",
-            {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric"
-            }
-          );
+          option.textContent = day.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+          });
 
           date.appendChild(option);
         }
       }
     }
 
-    // ==========================================
-    // AVAILABLE TIME OPTIONS
-    // ==========================================
-
     function loadTimes() {
       time.innerHTML =
         '<option value="">Choose a time</option>';
 
-      if (!date.value) {
-        return;
-      }
+      if (!date.value) return;
 
       ["10:00 AM", "1:00 PM", "4:00 PM"].forEach(slot => {
         const option = document.createElement("option");
@@ -318,14 +270,90 @@
         option.textContent = slot;
         time.appendChild(option);
       });
-
-      message.textContent = "";
     }
 
     date.addEventListener("change", loadTimes);
 
     // ==========================================
-    // SUBMIT BOOKING REQUEST TO FORMSPREE
+    // SEND BOOKING TO AIRTABLE
+    // ==========================================
+
+    async function sendToAirtable(booking) {
+      const endpoint =
+        "https://api.airtable.com/v0/" +
+        AIRTABLE_BASE_ID + "/" +
+        encodeURIComponent(AIRTABLE_TABLE_NAME);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + AIRTABLE_TOKEN,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          records: [{
+            fields: {
+              "Name": booking.name,
+              "Address": booking.address,
+              "Phone": booking.phone,
+              "Service": booking.service,
+              "DrivewaySize": booking.size,
+              "StartingPrice": booking.price,
+              "Date": booking.date,
+              "Time": booking.time,
+              "Status": "Pending"
+            }
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const details = await response.text();
+        console.error("Airtable error:", details);
+        throw new Error(
+          "Airtable could not save the request. Check the Airtable field names, token permissions, and table settings."
+        );
+      }
+
+      return response.json();
+    }
+
+    // ==========================================
+    // SEND BOOKING TO FORMSPREE
+    // ==========================================
+
+    async function sendToFormspree(booking) {
+      const data = new FormData();
+
+      data.append("name", booking.name);
+      data.append("address", booking.address);
+      data.append("phone", booking.phone);
+      data.append("service", booking.service);
+      data.append("driveway_size", booking.size);
+      data.append("price", "$" + booking.price);
+      data.append("date", booking.date);
+      data.append("time", booking.time);
+      data.append("booking_status", "Pending confirmation");
+      data.append(
+        "_subject",
+        "New Driveway Pressure Washing Booking Request"
+      );
+
+      const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        body: data,
+        headers: {
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Formspree could not send the request.");
+      }
+    }
+
+    // ==========================================
+    // SUBMIT TO BOTH SERVICES
     // ==========================================
 
     form.addEventListener("submit", async event => {
@@ -336,74 +364,73 @@
       submitButton.textContent = "Sending Request...";
 
       try {
-        // Check that the selected price is valid.
-        if (getPrice() === null) {
-          throw new Error(
-            "Please choose a service and driveway size."
-          );
+        const price = getPrice();
+
+        if (price === null) {
+          throw new Error("Please choose a service and driveway size.");
         }
 
-        // Verify that the selected day is a Sunday.
-        const selectedDate = new Date(
-          date.value + "T12:00:00"
-        );
+        const selectedDate = new Date(date.value + "T12:00:00");
 
-        if (
-          !date.value ||
-          selectedDate.getDay() !== 0
-        ) {
-          throw new Error(
-            "Please choose a valid Sunday."
-          );
+        if (!date.value || selectedDate.getDay() !== 0) {
+          throw new Error("Please choose a valid Sunday.");
         }
 
-        if (
-          !["10:00 AM", "1:00 PM", "4:00 PM"]
-            .includes(time.value)
-        ) {
-          throw new Error("Please choose an available time.");
+        if (!["10:00 AM", "1:00 PM", "4:00 PM"].includes(time.value)) {
+          throw new Error("Please choose a valid time.");
         }
 
-        const formData = new FormData(form);
+        const booking = {
+          name: form.elements.name.value.trim(),
+          address: form.elements.address.value.trim(),
+          phone: form.elements.phone.value.trim(),
+          service: service.value,
+          size: size.value,
+          price: price,
+          date: date.value,
+          time: time.value
+        };
 
-        formData.set("price", `$${getPrice()}`);
-        formData.set("_subject",
-          "New Driveway Pressure Washing Booking Request");
-        formData.set("booking_status", "Pending confirmation");
+        // Attempt both services independently, so a failure in
+        // one does not prevent the other from receiving the request.
+        const results = await Promise.allSettled([
+          sendToFormspree(booking),
+          sendToAirtable(booking)
+        ]);
 
-        const response = await fetch(
-          FORMSPREE_ENDPOINT,
-          {
-            method: "POST",
-            body: formData,
-            headers: {
-              Accept: "application/json"
-            }
-          }
-        );
+        const formspreeOK = results[0].status === "fulfilled";
+        const airtableOK = results[1].status === "fulfilled";
 
-        if (!response.ok) {
-          throw new Error(
-            "Your request could not be sent. Please check your Formspree setup and try again."
-          );
+        if (formspreeOK && airtableOK) {
+          message.style.color = "green";
+          message.textContent =
+            "Request sent to Formspree and saved in Airtable! Your appointment is not confirmed until we contact you.";
+
+          form.reset();
+          size.disabled = true;
+          updatePrice();
+          time.innerHTML =
+            '<option value="">Choose a date first</option>';
+
+        } else if (formspreeOK || airtableOK) {
+          message.style.color = "#a35b00";
+          message.textContent = formspreeOK
+            ? "Formspree received the request, but Airtable failed. Check your Airtable settings before retrying."
+            : "Airtable saved the request, but Formspree failed. Check your Formspree setup.";
+
+          console.error("Submission results:", results);
+
+        } else {
+          message.style.color = "red";
+          message.textContent =
+            "Neither service confirmed the request. Check the console and service settings before trying again.";
+
+          console.error("Submission results:", results);
         }
-
-        message.textContent =
-          "Request sent successfully! Your appointment is not confirmed until we contact you.";
-
-        message.style.color = "green";
-
-        form.reset();
-        size.disabled = true;
-        updatePrice();
-
-        time.innerHTML =
-          '<option value="">Choose a date first</option>';
 
       } catch (error) {
-        message.textContent = error.message;
         message.style.color = "red";
-
+        message.textContent = error.message;
       } finally {
         submitButton.disabled = false;
         submitButton.textContent = "Request Booking";
