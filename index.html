@@ -145,13 +145,13 @@
 
       <form id="bookingForm">
         <label for="name">Your Name</label>
-        <input id="name" name="name" required>
+        <input id="name" name="name" autocomplete="name" required>
 
         <label for="address">Service Address</label>
-        <input id="address" name="address" required>
+        <input id="address" name="address" autocomplete="street-address" required>
 
         <label for="phone">Phone Number</label>
-        <input id="phone" name="phone" type="tel" required>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" required>
 
         <label for="service">Choose a Service</label>
         <select id="service" name="service" required>
@@ -169,6 +169,7 @@
         </select>
 
         <div id="priceDisplay">Estimated price: —</div>
+        <input type="hidden" id="price" name="price" value="">
 
         <label for="date">Choose a Sunday</label>
         <select id="date" name="date" required>
@@ -184,7 +185,7 @@
           Request Booking
         </button>
 
-        <p id="message" role="status"></p>
+        <p id="message" role="status" aria-live="polite"></p>
       </form>
     </section>
   </main>
@@ -195,18 +196,22 @@
 
   <script>
     // ==========================================
-    // AIRTABLE SETTINGS — EXACT PLACE TO PASTE
+    // AIRTABLE SETTINGS (NOT USED IN THIS VERSION)
     // ==========================================
 
-    // IMPORTANT: Do not publish a real API token here.
-    // Anyone can view the source code of a public website.
-
-    const AIRTABLE_TOKEN = "pat3Eo0vLiehCGdTP";
+    const AIRTABLE_TOKEN = "PASTE_YOUR_AIRTABLE_TOKEN_HERE";
     const AIRTABLE_BASE_ID = "apphbFtUjRt91uBsP";
     const AIRTABLE_TABLE_NAME = "Bookings";
 
-    // Your Airtable connection is not implemented by these
-    // settings alone. A secure backend is needed to use them.
+    // WARNING: Do not put a real Airtable API token in
+    // public website code. These settings are not connected.
+
+    // ==========================================
+    // FORMSPREE SETTINGS
+    // ==========================================
+
+    const FORMSPREE_ENDPOINT =
+      "https://formspree.io/f/xnpjkzaw";
 
     // ==========================================
     // PRICES
@@ -223,6 +228,7 @@
     const date = document.getElementById("date");
     const time = document.getElementById("time");
     const priceDisplay = document.getElementById("priceDisplay");
+    const priceInput = document.getElementById("price");
     const message = document.getElementById("message");
     const submitButton = document.getElementById("submitButton");
     const form = document.getElementById("bookingForm");
@@ -242,22 +248,29 @@
       priceDisplay.textContent = price === null
         ? "Estimated price: —"
         : `Estimated price: $${price}`;
+
+      priceInput.value = price === null ? "" : `$${price}`;
     }
 
     service.addEventListener("change", () => {
       size.disabled = !service.value;
       size.value = "";
       updatePrice();
+      message.textContent = "";
     });
 
-    size.addEventListener("change", updatePrice);
+    size.addEventListener("change", () => {
+      updatePrice();
+      message.textContent = "";
+    });
 
     // ==========================================
-    // AVAILABLE SUNDAYS
+    // LOAD SUNDAYS FOR THE NEXT 90 DAYS
     // ==========================================
 
     function loadDates() {
-      date.innerHTML = '<option value="">Choose a Sunday</option>';
+      date.innerHTML =
+        '<option value="">Choose a Sunday</option>';
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -288,11 +301,12 @@
     }
 
     // ==========================================
-    // AVAILABLE TIMES
+    // AVAILABLE TIME OPTIONS
     // ==========================================
 
     function loadTimes() {
-      time.innerHTML = '<option value="">Choose a time</option>';
+      time.innerHTML =
+        '<option value="">Choose a time</option>';
 
       if (!date.value) {
         return;
@@ -304,12 +318,14 @@
         option.textContent = slot;
         time.appendChild(option);
       });
+
+      message.textContent = "";
     }
 
     date.addEventListener("change", loadTimes);
 
     // ==========================================
-    // BOOKING SUBMISSION
+    // SUBMIT BOOKING REQUEST TO FORMSPREE
     // ==========================================
 
     form.addEventListener("submit", async event => {
@@ -317,32 +333,80 @@
 
       message.textContent = "";
       submitButton.disabled = true;
+      submitButton.textContent = "Sending Request...";
 
       try {
-        /*
-          IMPORTANT:
-          This sample does NOT submit to Airtable.
-          It is intentionally disabled until a secure backend
-          is connected. Do not pretend a booking was saved.
-        */
-
-        if (
-          AIRTABLE_TOKEN === "PASTE_YOUR_AIRTABLE_TOKEN_HERE" ||
-          AIRTABLE_BASE_ID === "PASTE_YOUR_BASE_ID_HERE"
-        ) {
+        // Check that the selected price is valid.
+        if (getPrice() === null) {
           throw new Error(
-            "Booking system setup is incomplete. Please contact us directly."
+            "Please choose a service and driveway size."
           );
         }
 
-        throw new Error(
-          "A secure booking connection has not been configured yet."
+        // Verify that the selected day is a Sunday.
+        const selectedDate = new Date(
+          date.value + "T12:00:00"
         );
+
+        if (
+          !date.value ||
+          selectedDate.getDay() !== 0
+        ) {
+          throw new Error(
+            "Please choose a valid Sunday."
+          );
+        }
+
+        if (
+          !["10:00 AM", "1:00 PM", "4:00 PM"]
+            .includes(time.value)
+        ) {
+          throw new Error("Please choose an available time.");
+        }
+
+        const formData = new FormData(form);
+
+        formData.set("price", `$${getPrice()}`);
+        formData.set("_subject",
+          "New Driveway Pressure Washing Booking Request");
+        formData.set("booking_status", "Pending confirmation");
+
+        const response = await fetch(
+          FORMSPREE_ENDPOINT,
+          {
+            method: "POST",
+            body: formData,
+            headers: {
+              Accept: "application/json"
+            }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Your request could not be sent. Please check your Formspree setup and try again."
+          );
+        }
+
+        message.textContent =
+          "Request sent successfully! Your appointment is not confirmed until we contact you.";
+
+        message.style.color = "green";
+
+        form.reset();
+        size.disabled = true;
+        updatePrice();
+
+        time.innerHTML =
+          '<option value="">Choose a date first</option>';
 
       } catch (error) {
         message.textContent = error.message;
+        message.style.color = "red";
+
       } finally {
         submitButton.disabled = false;
+        submitButton.textContent = "Request Booking";
       }
     });
 
