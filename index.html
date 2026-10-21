@@ -172,9 +172,11 @@
     // AIRTABLE SETTINGS
     // ==========================================
 
-    const AIRTABLE_TOKEN = "patY5wIvB8hIfNbqf.71361c4e5c9f47ff000712fad43586b55ce55514fd5ad9fab3aa6bc3b67471ab";
+    const AIRTABLE_TOKEN = "patYOKGrfn0QOOzo1.5d2df9ee10ed95bafa5377f5e154f8f5e0433f56ccf9c34398cb2c63d821bd56";
     const AIRTABLE_BASE_ID = "apphbFtUjRt91uBsP";
-    const AIRTABLE_TABLE_NAME = "Bookings";
+
+    // Use the table ID from your Airtable URL.
+    const AIRTABLE_TABLE_ID = "tbllfjEdb9cbnYen3";
 
     // ==========================================
     // FORMSPREE SETTINGS
@@ -280,9 +282,7 @@
 
     async function sendToAirtable(booking) {
       const endpoint =
-        "https://api.airtable.com/v0/" +
-        AIRTABLE_BASE_ID + "/" +
-        encodeURIComponent(AIRTABLE_TABLE_NAME);
+        `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`;
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -307,15 +307,21 @@
         })
       });
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const details = await response.text();
-        console.error("Airtable error:", details);
+        console.error(
+          "Airtable HTTP status:",
+          response.status,
+          responseText
+        );
+
         throw new Error(
-          "Airtable could not save the request. Check the Airtable field names, token permissions, and table settings."
+          `Airtable error ${response.status}: ${responseText}`
         );
       }
 
-      return response.json();
+      return JSON.parse(responseText);
     }
 
     // ==========================================
@@ -348,8 +354,12 @@
       });
 
       if (!response.ok) {
+        const details = await response.text();
+        console.error("Formspree error:", details);
         throw new Error("Formspree could not send the request.");
       }
+
+      return response.json();
     }
 
     // ==========================================
@@ -370,9 +380,13 @@
           throw new Error("Please choose a service and driveway size.");
         }
 
+        if (!date.value) {
+          throw new Error("Please choose a Sunday.");
+        }
+
         const selectedDate = new Date(date.value + "T12:00:00");
 
-        if (!date.value || selectedDate.getDay() !== 0) {
+        if (selectedDate.getDay() !== 0) {
           throw new Error("Please choose a valid Sunday.");
         }
 
@@ -391,8 +405,6 @@
           time: time.value
         };
 
-        // Attempt both services independently, so a failure in
-        // one does not prevent the other from receiving the request.
         const results = await Promise.allSettled([
           sendToFormspree(booking),
           sendToAirtable(booking)
@@ -400,6 +412,8 @@
 
         const formspreeOK = results[0].status === "fulfilled";
         const airtableOK = results[1].status === "fulfilled";
+
+        console.log("Submission results:", results);
 
         if (formspreeOK && airtableOK) {
           message.style.color = "green";
@@ -414,23 +428,22 @@
 
         } else if (formspreeOK || airtableOK) {
           message.style.color = "#a35b00";
-          message.textContent = formspreeOK
-            ? "Formspree received the request, but Airtable failed. Check your Airtable settings before retrying."
-            : "Airtable saved the request, but Formspree failed. Check your Formspree setup.";
 
-          console.error("Submission results:", results);
+          message.textContent = formspreeOK
+            ? "Formspree received the request, but Airtable failed. Check the console for the exact error."
+            : "Airtable saved the request, but Formspree failed. Check the console for the exact error.";
 
         } else {
           message.style.color = "red";
           message.textContent =
-            "Neither service confirmed the request. Check the console and service settings before trying again.";
-
-          console.error("Submission results:", results);
+            "Neither service confirmed the request. Check the console for details.";
         }
 
       } catch (error) {
         message.style.color = "red";
         message.textContent = error.message;
+        console.error("Booking submission error:", error);
+
       } finally {
         submitButton.disabled = false;
         submitButton.textContent = "Request Booking";
